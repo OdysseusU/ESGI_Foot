@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 import serial
 import signal
@@ -36,7 +36,7 @@ def get_color_position(hsv, range1, range2):
 
 
 def main(argv):
-    serial_port = '/dev/cu.usbmodem11302'
+    serial_port = '/dev/cu.usbmodem11202'
     try:
         opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
     except getopt.GetoptError:
@@ -57,6 +57,7 @@ def main(argv):
             ser.close()
     else:
         print("Port doesn't exist")
+        print(myports)
 
     if ser:
         ser.open()
@@ -72,7 +73,7 @@ def main(argv):
     fps = 30.0
     countDown_serial = 500
 
-    list_positions = [(0,0)]
+    list_positions = [(0,0),(0,0)]
     while True:
         ret, img = vid.read()
 
@@ -88,9 +89,9 @@ def main(argv):
 
         if now - timer1 > countDown_serial:
             for ind,v in enumerate(list_positions):
-                print(ind,v[0],v[1])
+                #print(ind,v[0],v[1])
                 if ser:
-                    ser.write(bytes(ind) + struct.pack('H',v[0])+struct.pack('H',v[1]))
+                    ser.write((ind).to_bytes(1,byteorder='big') + struct.pack('H',v[0])+struct.pack('H',v[1]))
             timer1 = now
 
         frame_time = round(time.time() * 1000) - now

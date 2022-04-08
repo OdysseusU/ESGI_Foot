@@ -5,6 +5,7 @@ import signal
 import sys, getopt
 import time
 import struct
+import math
 import numpy as np
 
 import cv2
@@ -28,11 +29,32 @@ def get_color_position(hsv, range1, range2):
     contours, hierarchy = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     if len(contours) > 0:
-        area = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(area)
+        area_list = sorted(contours, key=cv2.contourArea, reverse=True)
+        area_list = [area_list[i] for i in range(min(len(area_list), 3))]
 
-        return x,y,w,h,area
+        res = []
+
+        for a in area_list:
+            x, y, w, h = cv2.boundingRect(a)
+            res.append((x, y, w, h))
+
+        return res
     return None,None,None,None,None
+
+def get_pose(list_areas):
+    if len(list_areas) == 3:
+        p1 = list_areas[0]
+        p2 = list_areas[1]
+        p3 = list_areas[2]
+
+        p1p2 = math.sqrt(sum([(p1[i] - p2[i])**2 for i in range(2)]))
+        p2p3 = math.sqrt(sum([(p2[i] - p3[i])**2 for i in range(2)]))
+        p3p1 = math.sqrt(sum([(p3[i] - p1[i])**2 for i in range(2)]))
+
+        index_min = min(range(len(3)), key=[p1p2, p2p3, p3p1].__getitem__)
+        #TODO
+    else:
+        return 0,0,0
 
 
 def main(argv):
@@ -78,20 +100,24 @@ def main(argv):
         ret, img = vid.read()
 
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        x,y,w,h,area = get_color_position(hsv, (40,50,50), (90,250,230))
 
-        if area is not None:
-            list_positions[0] = (x+w//2,y+h//2)
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            img = cv2.drawContours(img, area, -1, (0, 0, 255), 3)
+        list_points = get_color_position(hsv, (40,50,50), (90,250,230))
+
+        if list_points is not None:
+            pose = get_pose(list_points)
+            list_positions[0] = (pose[0],pose[1])
+            #cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            img = cv2.drawContours(img, (list_points[0])[4], -1, (0, 0, 255), 3)
 
         cv2.imshow('frame', img)
 
         if now - timer1 > countDown_serial:
-            for ind,v in enumerate(list_positions):
-                #print(ind,v[0],v[1])
-                if ser:
-                    ser.write((ind).to_bytes(1,byteorder='big') + struct.pack('H',v[0])+struct.pack('H',v[1]))
+            res = bytes()
+            for ind, v in enumerate(list_positions):
+                # print(ind,v[0],v[1])
+                res += (ind).to_bytes(1, byteorder='big') + struct.pack('H', v[0]) + struct.pack('H', v[1])
+            if ser:
+                ser.write(res)
             timer1 = now
 
         frame_time = round(time.time() * 1000) - now

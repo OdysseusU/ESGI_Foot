@@ -1,0 +1,21 @@
+{
+    "python.languageServer": "Pylance",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.analysis.autoSearchPaths": true,
+    "python.autoComplete.extraPaths": [
+        ".microbit-stubs/microbit/lib"
+    ],
+    "python.analysis.extraPaths": [
+        ".microbit-stubs/microbit/lib"
+    ],
+    "files.exclude": {
+        ".microbit-stubs": true,
+        ".vscode": true,
+        ".env": true
+    },
+    "python.envFile": "${workspacefolder}/.env",
+    "python.linting.pylintArgs": [
+        "--disable=W,C"
+    ]
+}

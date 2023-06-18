@@ -25,15 +25,19 @@ class radio_receiver:
         radio.on()
         radio.config(length=32,channel=42,power=7,address=0x31415926, group=0)
         
-        self.positions = []
+        self.positions = {}
         
     def parse_poses(self,msg):
-        self.positions = []
+        self.positions = {}
         if msg and len(msg) > 0:
-            for i in range(len(msg)//5):
-                v1 = struct.unpack('H',msg[i*5+1:i*5+3])[0]
-                v2 = struct.unpack('H',msg[i*5+3:i*5+5])[0]
-                self.positions.append((v1,v2))
+            len_msg = 7
+            for i in range(len(msg)//len_msg):
+                smsg = i*len_msg
+                id_v = int.from_bytes(msg[smsg], 'big')
+                v1 = struct.unpack('h',msg[smsg+1:smsg+3])[0]
+                v2 = struct.unpack('h',msg[smsg+3:smsg+5])[0]
+                th = struct.unpack('h',msg[smsg+5:smsg+7])[0]
+                self.positions[id_v] = (v1,v2,th)
         return self.positions
         
     def update(self):
